@@ -1,0 +1,39 @@
+import { Request, Response } from "express";
+import { AssistantMessageParams } from "../types/assistantTypes";
+import axios from "axios";
+
+const handleAssistantController = async (
+  req: Request<{}, {}, AssistantMessageParams>,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id, message, self, replyId } = req.body;
+
+    console.log("Assistant Message Received:", {
+      id,
+      message,
+      self,
+      replyId,
+    });
+
+    // 🧠 Call your Flask Assistant API
+    const flaskResponse = await axios.post("http://localhost:5001/ask", {
+      prompt: message,
+    });
+    console.log(flaskResponse.data, "flaskResponse");
+    // 📤 Send the assistant
+    const assistantReply =
+      flaskResponse.data?.response ?? "No response received.";
+
+    res.status(200).json({
+      success: true,
+      reply: assistantReply,
+      id: replyId,
+    });
+  } catch (error: any) {
+    console.error("❌ Assistant handler error:", error.message || error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export default handleAssistantController;
